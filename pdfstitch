@@ -29,19 +29,21 @@ my $row = 1;
 
 foreach my $nr (@{$meta->{pageorder}})
 {
-    my $xo = $outpdf->importPageIntoForm($inpdf, $nr);
+    if($nr ne "blank")
+    {
+        my $xo = $outpdf->importPageIntoForm($inpdf, $nr);
 
-    my ($llx, $lly, $urx, $ury);
-    $llx = $meta->{x} + $meta->{pageoffsets}->{$nr}->{x};
-    $lly = $meta->{y} + $meta->{pageoffsets}->{$nr}->{y};
-    $urx = $llx + $meta->{width};
-    $ury = $lly + $meta->{height};
-    $xo->bbox($llx, $lly, $urx, $ury);
+        my ($llx, $lly, $urx, $ury);
+        $llx = $meta->{x} + $meta->{pageoffsets}->{$nr}->{x};
+        $lly = $meta->{y} + $meta->{pageoffsets}->{$nr}->{y};
+        $urx = $llx + $meta->{width};
+        $ury = $lly + $meta->{height};
+        $xo->bbox($llx, $lly, $urx, $ury);
 
-    my $xpos = ($column - 1) * $meta->{width};
-    my $ypos = $height - ($row * $meta->{height});
-    print "Stitching page $nr at $xpos,$ypos...\n";
-    $content->formimage($xo, $xpos, $ypos);
+        my $xpos = ($column - 1) * $meta->{width};
+        my $ypos = $height - ($row * $meta->{height});
+        $content->formimage($xo, $xpos, $ypos);
+    }
     $column++;
     if($column > $meta->{columns})
     {
