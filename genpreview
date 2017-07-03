@@ -35,5 +35,5 @@ foreach my $nr (@{$meta->{pageorder}})
     $content->fill();
 }
 
-$outpdf->saveas(basename($meta->{input}, '.pdf') . '-preview.pdf');
+$outpdf->saveas(basename($metafile, ('.pdf.stitch','.stitch')) . '-preview.pdf');
 

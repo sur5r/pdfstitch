@@ -28,5 +28,5 @@ foreach my $nr (@{$meta->{pageorder}})
     $page->cropbox($llx, $lly, $urx, $ury);
 }
 
-$cropped->saveas(basename($meta->{input}, '.pdf') . '-cropped.pdf');
+$cropped->saveas(basename($metafile, ('.pdf.stitch', '.stitch')) . '-cropped.pdf');
 

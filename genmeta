@@ -2,6 +2,7 @@
 
 use strict;
 
+use File::Basename;
 use PDF::API2;
 use YAML;
 
@@ -10,7 +11,7 @@ my $infile = $ARGV[0];
 die "Please specify PDF to examine!\n" unless defined $infile;
 die "Could not open $infile!\n" unless -r $infile;
 
-my $outfile = "${infile}.stitch";
+my $outfile = basename($infile) . ".stitch";
 
 die "$outfile exists, aborting!\n" if -e $outfile;
 
@@ -22,7 +23,7 @@ my $page = $pdf->openpage(1);
 my ($llx, $lly, $urx, $ury) = $page->get_mediabox;
 
 my $meta = {
-    input => $infile,
+    input => basename($infile),
     x => (($urx - $llx)*0.1)/2,
     y => (($ury - $lly)*0.1)/2,
     width => ($urx - $llx)*0.9,
