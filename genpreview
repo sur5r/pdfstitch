@@ -1,0 +1,39 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+use File::Basename;
+use PDF::API2;
+use YAML;
+
+my $metafile = $ARGV[0];
+
+die "Please specify a .pdf.stitch to process!\n" unless defined $metafile;
+die "Can't open $metafile!\n" unless -r $metafile;
+
+my $meta = YAML::LoadFile($metafile);
+
+my $inpdf = PDF::API2->open($meta->{input});
+my $outpdf = PDF::API2->new();
+
+my $transp = $outpdf->egstate();
+$transp->transparency(0.8);
+
+foreach my $nr (@{$meta->{pageorder}})
+{
+    print "Generating preview for page $nr...\n";
+    my $page = $outpdf->import_page($inpdf, $nr, 0);
+    my $content = $page->gfx();
+    $content->egstate($transp);
+    my ($llx, $lly, $urx, $ury);
+    $llx = $meta->{x} + $meta->{pageoffsets}->{$nr}->{x};
+    $lly = $meta->{y} + $meta->{pageoffsets}->{$nr}->{y};
+    $urx = $meta->{width};
+    $ury = $meta->{height};
+    $content->rect($llx, $lly, $urx, $ury);
+    $content->fillcolor('%F000');
+    $content->fill();
+}
+
+$outpdf->saveas(basename($meta->{input}, '.pdf') . '-preview.pdf');
+

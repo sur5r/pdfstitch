@@ -1,0 +1,55 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+use File::Basename;
+use PDF::API2;
+use YAML;
+
+my $metafile = $ARGV[0];
+
+die "Please specify a .pdf.stitch to process!\n" unless defined $metafile;
+die "Can't open $metafile!\n" unless -r $metafile;
+
+my $meta = YAML::LoadFile($metafile);
+
+my $width = $meta->{width} * $meta->{columns};
+my $height = $meta->{height} * $meta->{rows};
+
+my $inpdf = PDF::API2->open($meta->{input});
+my $outpdf = PDF::API2->new();
+
+my $page = $outpdf->page();
+
+$page->mediabox($width + 100, $height + 100);
+
+my $content = $page->gfx();
+my $column = 1;
+my $row = 1;
+
+foreach my $nr (@{$meta->{pageorder}})
+{
+    my $xo = $outpdf->importPageIntoForm($inpdf, $nr);
+
+    my ($llx, $lly, $urx, $ury);
+    $llx = $meta->{x} + $meta->{pageoffsets}->{$nr}->{x};
+    $lly = $meta->{y} + $meta->{pageoffsets}->{$nr}->{y};
+    $urx = $llx + $meta->{width};
+    $ury = $lly + $meta->{height};
+    $xo->bbox($llx, $lly, $urx, $ury);
+
+    my $xpos = ($column - 1) * $meta->{width};
+    my $ypos = $height - ($row * $meta->{height});
+    print "Stitching page $nr at $xpos,$ypos...\n";
+    $content->formimage($xo, $xpos, $ypos);
+    $column++;
+    if($column > $meta->{columns})
+    {
+        $row++;
+        $column=1;
+    }
+
+}
+
+$outpdf->saveas(basename($meta->{input}, '.pdf') . '-stitched.pdf');
+
