@@ -20,7 +20,7 @@
 
 On Debian, you can installed them with:
 
-`# apt install libpdf-api2-perl libyaml-perl`
+`# apt install libfile-libmagic-perl libpdf-api2-perl libyaml-perl`
 
 ## Usage
 
