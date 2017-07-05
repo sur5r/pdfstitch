@@ -1,57 +1,203 @@
 #!/usr/bin/perl -w
 
+use 5.20.0;
 use strict;
+use utf8;
+use warnings qw(all);
 
 use File::Basename;
+use File::LibMagic;
+use Getopt::Long;
 use PDF::API2;
 use YAML;
 
-my $metafile = $ARGV[0];
+my $help = '';
+my $genmeta = '';
+my $preview = '';
+my $crop = '';
+my $stitch = '';
 
-die "Please specify a .pdf.stitch to process!\n" unless defined $metafile;
-die "Can't open $metafile!\n" unless -r $metafile;
+Getopt::Long::Configure("bundling");
 
-my $meta = YAML::LoadFile($metafile);
 
-my $width = $meta->{width} * $meta->{columns};
-my $height = $meta->{height} * $meta->{rows};
+my $usage = <<ENDUSAGE;
+pdfstitch - Copyright (C) 2017 by Jakob Haufe <sur5r\@sur5r.net>
 
-my $inpdf = PDF::API2->open($meta->{input});
-my $outpdf = PDF::API2->new();
+Usage: $0 [-hgpcs] [--genmeta] [--preview] [--crop] [--stitch] {PDF file|.stitch file}
 
-my $page = $outpdf->page();
+ -h, --help     Display this message
+ -g, --genmeta  Generate .stitch file for stitching based on given PDF
+                (default when called with a PDF)
+ -p, --preview  Generate preview PDF containing overlays to analyze
+                cropping
+ -c, --crop     Generate cropped PDF according to given .stitch
+ -s, --stitch   Generate stitched PDF
+                (default when called with a .stitch file)
 
-$page->mediabox($width + 100, $height + 100);
+pdfstitch is free software under the GNU AGPL version 3. See LICENSE for details.
+ENDUSAGE
 
-my $content = $page->gfx();
-my $column = 1;
-my $row = 1;
+GetOptions
+(
+    'h|help' => \$help,
+    'g|genmeta' => \$genmeta,
+    'p|preview' => \$preview,
+    'c|crop' => \$crop,
+    's|stitch' => \$stitch
+) or die "Call with --help to see available options.\n";
 
-foreach my $nr (@{$meta->{pageorder}})
+die $usage if $help;
+
+die "--genmeta can not be combined with other actions!\n" if($genmeta and ($preview or $crop or $stitch));
+
+die "No input file specified!\n" unless $ARGV[0];
+
+my $infile = $ARGV[0];
+
+die "$infile does not exist!\n" unless -e $infile;
+die "$infile is not readable!\n" unless -r $infile;
+
+if(not ($genmeta or $preview or $crop or $stitch))
 {
-    if($nr ne "blank")
+    my $magic = File::LibMagic->new();
+
+    my $info = $magic->info_from_filename($infile);
+    if($info->{mime_type} eq "application/pdf")
     {
-        my $xo = $outpdf->importPageIntoForm($inpdf, $nr);
-
-        my ($llx, $lly, $urx, $ury);
-        $llx = $meta->{x} + $meta->{pageoffsets}->{$nr}->{x};
-        $lly = $meta->{y} + $meta->{pageoffsets}->{$nr}->{y};
-        $urx = $llx + $meta->{width};
-        $ury = $lly + $meta->{height};
-        $xo->bbox($llx, $lly, $urx, $ury);
-
-        my $xpos = ($column - 1) * $meta->{width};
-        my $ypos = $height - ($row * $meta->{height});
-        $content->formimage($xo, $xpos, $ypos);
+        print "Detected PDF, turning on --genmeta\n";
+        $genmeta = 1;
     }
-    $column++;
-    if($column > $meta->{columns})
+    elsif ($info->{mime_type} eq  "text/plain")
     {
-        $row++;
-        $column=1;
+        YAML::LoadFile($infile) or die "Failed to parse $infile as YAML!\n";
+        print "Detected YAML, turning on --stitch\n";
+        $stitch = 1;
     }
-
+    else
+    {
+        die "$infile has unsupported type: $info->{mime_type}\n";
+    }
 }
 
-$outpdf->saveas(basename($metafile, ('.pdf.stitch','.stitch')) . '-stitched.pdf');
+if($genmeta)
+{
+    print "Generating meta file for " . basename($infile) . ".\n";
+    my $outfile = basename($infile) . ".stitch";
+
+    die "$outfile exists, aborting!\n" if -e $outfile;
+
+
+    my $pdf = PDF::API2->open($infile);
+
+    my $page = $pdf->openpage(1);
+    my ($llx, $lly, $urx, $ury) = $page->get_mediabox;
+
+    my $meta = {
+        input => basename($infile),
+        x => (($urx - $llx)*0.1)/2,
+        y => (($ury - $lly)*0.1)/2,
+        width => ($urx - $llx)*0.9,
+        height => ($ury - $lly)*0.9,
+        columns => int(sqrt($pdf->pages)),
+        rows => int(sqrt($pdf->pages)),
+        pageorder => [(1 .. $pdf->pages)],
+    };
+
+    foreach $page (1..$pdf->pages)
+    {
+        $meta->{pageoffsets}->{$page}->{x} = 0;
+        $meta->{pageoffsets}->{$page}->{y} = 0;
+    }
+
+    YAML::Bless($meta)->keys(['input','x','y','width','height','columns','rows', 'pageorder','pageoffsets']);
+    YAML::DumpFile($outfile,$meta);
+}
+else
+{
+    my $meta = YAML::LoadFile($infile);
+    my $inpdf = PDF::API2->open($meta->{input});
+
+    if($preview or $crop)
+    {
+        my $previewpdf = PDF::API2->new() if $preview;
+        my $croppedpdf = PDF::API2->new() if $crop;
+        my $transparency;
+
+        if($preview)
+        {
+            $transparency = $previewpdf->egstate();
+            $transparency->transparency(0.8);
+        }
+
+        foreach my $pagenr (@{$meta->{pageorder}})
+        {
+            next if $pagenr eq "blank";
+
+            my $llx = $meta->{x} + $meta->{pageoffsets}->{$pagenr}->{x};
+            my $lly = $meta->{y} + $meta->{pageoffsets}->{$pagenr}->{x};
+            my $urx = $meta->{width};
+            my $ury = $meta->{height};
+
+            if($preview)
+            {
+                my $previewpage = $previewpdf->import_page($inpdf, $pagenr, 0);
+                my $previewcontent = $previewpage->gfx();
+                $previewcontent->egstate($transparency);
+                $previewcontent->rect($llx, $lly, $urx, $ury);
+                $previewcontent->fillcolor('%F000');
+                $previewcontent->fill();
+            }
+            if($crop)
+            {
+                my $croppage = $croppedpdf->import_page($inpdf, $pagenr, 0);
+                $croppage->cropbox($llx, $lly, $llx + $urx, $lly + $ury);
+            }
+        }
+
+        $previewpdf->saveas(basename($infile, ('.pdf.stitch', '.stitch')) . '-preview.pdf') if $preview;
+        $croppedpdf->saveas(basename($infile, ('.pdf.stitch', '.stitch')) . '-cropped.pdf') if $crop;
+    }
+
+    if($stitch)
+    {
+        my $width = $meta->{width} * $meta->{columns};
+        my $height = $meta->{height} * $meta->{rows};
+
+        my $stitchedpdf = PDF::API2->new();
+
+        my $page = $stitchedpdf->page();
+        $page->mediabox($width + 100, $height + 100);
+
+        my $content = $page->gfx();
+        my $column = 1;
+        my $row = 1;
+
+        foreach my $pagenr (@{$meta->{pageorder}})
+        {
+            if($pagenr ne "blank")
+            {
+                my $xo = $stitchedpdf->importPageIntoForm($inpdf, $pagenr);
+
+                my $llx = $meta->{x} + $meta->{pageoffsets}->{$pagenr}->{x};
+                my $lly = $meta->{y} + $meta->{pageoffsets}->{$pagenr}->{y};
+                my $urx = $llx + $meta->{width};
+                my $ury = $lly + $meta->{height};
+
+                $xo->bbox($llx, $lly, $urx, $ury);
+
+                my $xpos = ($column - 1) * $meta->{width};
+                my $ypos = $height - ($row * $meta->{height});
+                $content->formimage($xo, $xpos, $ypos);
+            }
+            $column++;
+            if($column > $meta->{columns})
+            {
+                $row++;
+                $column=1;
+            }
+        }
+
+        $stitchedpdf->saveas(basename($infile, ('.pdf.stitch','.stitch')) . '-stitched.pdf');
+    }
+}
 
