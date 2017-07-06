@@ -60,14 +60,23 @@ die "$infile is not readable!\n" unless -r $infile;
 if(not ($genmeta or $preview or $crop or $stitch))
 {
     my $magic = File::LibMagic->new();
+    my $mime_type;
 
-    my $info = $magic->info_from_filename($infile);
-    if($info->{mime_type} eq "application/pdf")
+    if($magic->can('info_from_filename'))
+    {
+        $mime_type = $magic->info_from_filename($infile)->{mime_type}
+    }
+    else
+    {
+        # Fallback for File::Libmagic below 1.06
+        $mime_type = $magic->checktype_filename($infile);
+    }
+    if($mime_type =~ "^application/pdf")
     {
         print "Detected PDF, turning on --genmeta\n";
         $genmeta = 1;
     }
-    elsif ($info->{mime_type} eq  "text/plain")
+    elsif ($mime_type =~  "^text/plain")
     {
         YAML::LoadFile($infile) or die "Failed to parse $infile as YAML!\n";
         print "Detected YAML, turning on --stitch\n";
@@ -75,7 +84,7 @@ if(not ($genmeta or $preview or $crop or $stitch))
     }
     else
     {
-        die "$infile has unsupported type: $info->{mime_type}\n";
+        die "$infile has unsupported type: $mime_type\n";
     }
 }
 
