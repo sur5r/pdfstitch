@@ -134,7 +134,7 @@ else
             next if $pagenr eq "blank";
 
             my $llx = $meta->{x} + $meta->{pageoffsets}->{$pagenr}->{x};
-            my $lly = $meta->{y} + $meta->{pageoffsets}->{$pagenr}->{x};
+            my $lly = $meta->{y} + $meta->{pageoffsets}->{$pagenr}->{y};
             my $urx = $meta->{width};
             my $ury = $meta->{height};
 
