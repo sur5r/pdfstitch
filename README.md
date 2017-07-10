@@ -22,6 +22,10 @@ On Debian, you can installed them with:
 
 `# apt install libfile-libmagic-perl libpdf-api2-perl libyaml-perl`
 
+On FreeBSD, you can install them with:
+
+`# pkg install p5-File-LibMagic p5-PDF-API2 p5-YAML`
+
 ## Usage
 
 1. Run `pdfstitch` on your input PDF:
