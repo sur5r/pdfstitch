@@ -175,11 +175,11 @@ else
         my $stitchedpdf = PDF::API2->new();
 
         my $page = $stitchedpdf->page();
-        $page->mediabox($width + 100, $height + 100);
+        $page->mediabox($width, $height);
 
         my $content = $page->gfx();
-        my $column = 1;
-        my $row = 1;
+        my $column = 0;
+        my $row = 0;
 
         foreach my $pagenr (@{$meta->{pageorder}})
         {
@@ -194,15 +194,15 @@ else
 
                 $xo->bbox($llx, $lly, $urx, $ury);
 
-                my $xpos = ($column - 1) * $meta->{width};
-                my $ypos = $height - ($row * $meta->{height});
+                my $xpos = ($column) * $meta->{width} - ($meta->{x} + $meta->{pageoffsets}->{$pagenr}->{x});
+                my $ypos = $height - (($row+1) * $meta->{height}) - ($meta->{y} + $meta->{pageoffsets}->{$pagenr}->{y});
                 $content->formimage($xo, $xpos, $ypos);
             }
             $column++;
-            if($column > $meta->{columns})
+            if($column == $meta->{columns})
             {
                 $row++;
-                $column=1;
+                $column=0;
             }
         }
 
