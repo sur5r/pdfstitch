@@ -124,6 +124,7 @@ if($genmeta)
     }
 
     YAML::Bless($meta)->keys(['input','x','y','width','height','columns','rows', 'pageorder','pageoffsets']);
+    YAML::Bless($meta->{pageoffsets})->keys([1..$pdf->pages]);
     YAML::DumpFile($outfile,$meta);
 }
 else
