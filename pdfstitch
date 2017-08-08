@@ -16,6 +16,7 @@ my $genmeta = '';
 my $preview = '';
 my $crop = '';
 my $stitch = '';
+my $defaultcrop = '0.9';
 
 Getopt::Long::Configure("bundling");
 
@@ -23,16 +24,17 @@ Getopt::Long::Configure("bundling");
 my $usage = <<ENDUSAGE;
 pdfstitch - Copyright (C) 2017 by Jakob Haufe <sur5r\@sur5r.net>
 
-Usage: $0 [-hgpcs] [--genmeta] [--preview] [--crop] [--stitch] {PDF file|.stitch file}
+Usage: $0 [-hgpcs] [--genmeta] [--defaultcrop=<factor>] [--preview] [--crop] [--stitch] {PDF file|.stitch file}
 
- -h, --help     Display this message
- -g, --genmeta  Generate .stitch file for stitching based on given PDF
-                (default when called with a PDF)
- -p, --preview  Generate preview PDF containing overlays to analyze
-                cropping
- -c, --crop     Generate cropped PDF according to given .stitch
- -s, --stitch   Generate stitched PDF
-                (default when called with a .stitch file)
+ -h, --help             Display this message
+ -g, --genmeta          Generate .stitch file for stitching based on given PDF
+                        (default when called with a PDF)
+ -d, --defaultcrop=0.9  Set default crop factor for genmeta (defaults to 0.9)
+ -p, --preview          Generate preview PDF containing overlays to analyze
+                        cropping
+ -c, --crop             Generate cropped PDF according to given .stitch
+ -s, --stitch           Generate stitched PDF
+                        (default when called with a .stitch file)
 
 pdfstitch is free software under the GNU AGPL version 3. See LICENSE for details.
 ENDUSAGE
@@ -41,6 +43,7 @@ GetOptions
 (
     'h|help' => \$help,
     'g|genmeta' => \$genmeta,
+    'd|defaultcrop=s' => \$defaultcrop,
     'p|preview' => \$preview,
     'c|crop' => \$crop,
     's|stitch' => \$stitch
@@ -48,7 +51,9 @@ GetOptions
 
 die $usage if $help;
 
-die "--genmeta can not be combined with other actions!\n" if($genmeta and ($preview or $crop or $stitch));
+die "--genmeta can only be combined with --defaultcrop!\n" if($genmeta and ($preview or $crop or $stitch));
+
+die "--defaultcrop can only be combined with --genmeta!\n" if($defaultcrop and ($preview or $crop or $stitch));
 
 die "No input file specified!\n" unless $ARGV[0];
 
@@ -103,10 +108,10 @@ if($genmeta)
 
     my $meta = {
         input => basename($infile),
-        x => (($urx - $llx)*0.1)/2,
-        y => (($ury - $lly)*0.1)/2,
-        width => ($urx - $llx)*0.9,
-        height => ($ury - $lly)*0.9,
+        x => (($urx - $llx)*(1-$defaultcrop))/2,
+        y => (($ury - $lly)*(1-$defaultcrop))/2,
+        width => ($urx - $llx)*$defaultcrop,
+        height => ($ury - $lly)*$defaultcrop,
         columns => int(sqrt($pdf->pages)),
         rows => int(sqrt($pdf->pages)),
         pageorder => [(1 .. $pdf->pages)],
