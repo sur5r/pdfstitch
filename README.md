@@ -30,10 +30,11 @@ On FreeBSD, you can install them with:
 
 1. Run `pdfstitch` on your input PDF:
 
-   `./pdfstitch [--genmeta] foobar.pdf`
+   `./pdfstitch [--genmeta] [--defaultcrop=0.9] foobar.pdf`
 
    This will generate a YAML file called `foobar.pdf.stitch`. Edit this file according to the desired output.
-   This is also the default action if called with a PDF.
+   This is also the default action if called with a PDF. Per default 10% (factor 0.9) is applied as crop factor.
+   You can adjust this value with the --defaultcrop parameter.
 2. Optional: Generate a preview and/or cropped PDF:
 
    `./pdfstitch --preview foobar.pdf.stitch`
