@@ -16,7 +16,7 @@ my $genmeta = '';
 my $preview = '';
 my $crop = '';
 my $stitch = '';
-my $defaultcrop = '0.9';
+my $defaultcrop = '';
 
 Getopt::Long::Configure("bundling");
 
@@ -96,6 +96,7 @@ if(not ($genmeta or $preview or $crop or $stitch))
 if($genmeta)
 {
     print "Generating meta file for " . basename($infile) . ".\n";
+    $defaultcrop = '0.9' unless $defaultcrop;
     my $outfile = basename($infile) . ".stitch";
 
     die "$outfile exists, aborting!\n" if -e $outfile;
