@@ -8,6 +8,10 @@
 ## License
 `pdfstitch` is free software under the GNU AGPL version 3. See `LICENSE` for details.
 
+## Dedication
+
+`pdfstitch` is dedicated to the memory of Janka Kuhfuß.
+
 ## Dependencies
 
 `pdfstitch` makes use of the following Perl modules:
