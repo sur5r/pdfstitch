@@ -10,7 +10,7 @@
 
 ## Dedication
 
-`pdfstitch` is dedicated to the memory of Janka Kuhfuß.
+`pdfstitch` is dedicated to the memory of Janka "marsi" Kuhfuß.
 
 ## Dependencies
 
