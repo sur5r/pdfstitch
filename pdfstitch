@@ -160,6 +160,10 @@ else
                 my $previewcontent = $previewpage->gfx();
                 $previewcontent->egstate($transparency);
                 $previewcontent->rect($llx, $lly, $urx, $ury);
+                $previewcontent->rect($llx - 20, $lly + $ury, 20, 20); # upper left
+                $previewcontent->rect($llx + $urx, $lly + $ury, 20, 20); # upper right
+                $previewcontent->rect($llx - 20, $lly - 20, 20, 20); # lower left
+                $previewcontent->rect($llx + $urx, $lly - 20, 20, 20); # lower right
                 $previewcontent->fillcolor('%F000');
                 $previewcontent->fill();
             }
