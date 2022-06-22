@@ -22,7 +22,7 @@ Getopt::Long::Configure("bundling");
 
 
 my $usage = <<ENDUSAGE;
-pdfstitch - Copyright (C) 2017 by Jakob Haufe <sur5r\@sur5r.net>
+pdfstitch - Copyright (C) 2017-2022 by Jakob Haufe <sur5r\@sur5r.net>
 
 Usage: $0 [-hgpcs] [--genmeta] [--defaultcrop=<factor>] [--preview] [--crop] [--stitch] {PDF file|.stitch file}
 
@@ -114,7 +114,7 @@ if($genmeta)
         width => ($urx - $llx)*$defaultcrop,
         height => ($ury - $lly)*$defaultcrop,
         columns => int(sqrt($pdf->pages)),
-        rows => int(sqrt($pdf->pages)),
+        rows => POSIX::ceil($pdf->pages/int(sqrt($pdf->pages))),
         pageorder => [(1 .. $pdf->pages)],
     };
 
