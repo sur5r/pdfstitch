@@ -58,6 +58,7 @@ die "--defaultcrop can only be combined with --genmeta!\n" if($defaultcrop and (
 die "No input file specified!\n" unless $ARGV[0];
 
 my $infile = $ARGV[0];
+utf8::decode($infile);
 
 die "$infile does not exist!\n" unless -e $infile;
 die "$infile is not readable!\n" unless -r $infile;
