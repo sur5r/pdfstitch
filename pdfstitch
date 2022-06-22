@@ -133,6 +133,11 @@ else
     my $meta = YAML::LoadFile($infile);
     my $inpdf = PDF::API2->open($meta->{input});
 
+    if($meta->{pageorder} > $meta->{x} * $meta->{y})
+    {
+        print "WARNING: Output layout is not big enough for all wanted pages.\n";
+    }
+
     if($preview or $crop)
     {
         my $previewpdf = PDF::API2->new() if $preview;
