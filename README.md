@@ -9,7 +9,7 @@ It has been created to print sewing patterns distributed as A4 or Letter PDFs on
 thus saving oneself the hassle of cutting and gluing individual pages.
 
 ## License
-`pdfstitch` is free software under the GNU AGPL version 3. See `LICENSE` for details.
+`pdfstitch` is free software under the GNU GPL version 3. See `LICENSE` for details.
 
 ## Dedication
 
